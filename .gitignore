@@ -4,8 +4,7 @@
 *.out
 
 # Compiled simulation binaries
-sim/pc_reg_sim
-sim/instruction_memory_sim
+sim/*_sim
 
 # Editor temporary files
 *.swp
