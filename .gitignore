@@ -1,0 +1,12 @@
+# Simulation outputs
+*.vcd
+*.vvp
+*.out
+
+# Compiled simulation binaries
+sim/pc_reg_sim
+sim/instruction_memory_sim
+
+# Editor temporary files
+*.swp
+*~
