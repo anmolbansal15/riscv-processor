@@ -20,5 +20,4 @@ always @(posedge clk) begin
         regs[rd] <= write_data;
 end
 
-
 endmodule 
