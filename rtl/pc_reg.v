@@ -1,6 +1,7 @@
 module pc_reg(
 	input clk,
 	input rst,
+	input [31:0] next_pc,
 	output reg [31:0]pc
 );
 
@@ -8,7 +9,7 @@ always@(posedge clk)begin
 	if(rst)
 		pc<=32'b0;
 	else
-		pc<=pc+32'd4;
+		pc<=next_pc;
 end
 
 endmodule
