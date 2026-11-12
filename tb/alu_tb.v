@@ -49,13 +49,23 @@ initial begin
         if (result !== 32'hFC || zero !== 1'b0)
             $fatal(1, "OR failed");
 
-        // Test 5: Signed less-than (-1 < 1)
-        operand_a = 32'hFFFFFFFF;
-        operand_b = 32'd1;
+        // Test 5: XOR
+        operand_a = 32'hF0;
+        operand_b = 32'h3C;
         alu_control = 3'b100;
         #1;
+
+        if (result !== 32'hCC || zero !== 1'b0)
+            $fatal(1, "XOR failed");
+
+        // Test 6: Signed less-than (-1 < 1)
+        operand_a = 32'hFFFFFFFF;
+        operand_b = 32'd1;
+        alu_control = 3'b101;
+        #1;
+
         if (result !== 32'd1 || zero !== 1'b0)
-            $fatal(1, "Signed comparison failed");
+            $fatal(1, "SLT failed");
 
         $display("PASS: ALU tests");
         $finish;

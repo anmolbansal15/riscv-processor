@@ -12,7 +12,8 @@ always@(*)begin
 		3'b001:result=operand_a - operand_b;
 		3'b010:result=operand_a & operand_b;
 		3'b011:result=operand_a | operand_b;
-		3'b100:result=($signed(operand_a) < $signed(operand_b));
+		3'b100:result=operand_a ^ operand_b;
+		3'b101:result=($signed(operand_a) < $signed(operand_b));
 		default:
 			result=32'b0;
 
