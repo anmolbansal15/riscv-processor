@@ -1,4 +1,3 @@
-
 module control_unit (
     input  wire [31:0] instruction,
 
@@ -91,16 +90,57 @@ module control_unit (
                 endcase
             end
 
-            // I-type: ADDI
+            // I-type
             7'b0010011: begin
-                if (funct3 == 3'b000) begin
-                    reg_write   = 1'b1;
-                    alu_src     = 1'b1;
-                    alu_control = 3'b000;
-                    imm_sel     = 2'b00;
-                    illegal     = 1'b0;
-                end
-            end
+
+		    case(funct3)
+			    3'b000: begin
+				    //ADDI
+				    reg_write   = 1'b1;
+				    alu_src     = 1'b1;
+				    alu_control = 3'b000;
+				    imm_sel     = 2'b00;
+				    illegal     = 1'b0;
+			    end
+
+			    3'b111: begin
+				    //ANDI
+				    reg_write   = 1'b1;
+				    alu_src     = 1'b1;
+				    alu_control = 3'b010;
+				    imm_sel     = 2'b00;
+				    illegal     = 1'b0;
+			    end
+
+			    3'b110: begin
+				    //ORI
+				    reg_write   = 1'b1;
+				    alu_src     = 1'b1;
+				    alu_control = 3'b011;
+				    imm_sel     = 2'b00;
+				    illegal     = 1'b0;
+			    end
+
+			    3'b100: begin
+				    //XORI
+				    reg_write   = 1'b1;
+				    alu_src     = 1'b1;
+				    alu_control = 3'b100;
+				    imm_sel     = 2'b00;
+				    illegal     = 1'b0;
+			    end
+
+			    3'b010: begin
+				    //SLTI
+				    reg_write   = 1'b1;
+				    alu_src     = 1'b1;
+				    alu_control = 3'b101;
+				    imm_sel     = 2'b00;
+				    illegal     = 1'b0;
+			    end
+
+		    endcase		    
+	    end
 
             // I-type: LW
             7'b0000011: begin

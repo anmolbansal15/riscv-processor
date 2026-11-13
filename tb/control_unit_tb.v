@@ -183,7 +183,96 @@ module control_unit_tb;
             branch !== 1'b0)
             $fatal(1, "ADDI decode failed");
 
-	// Test 9: LW x3, 8(x1)
+
+
+	            // Test 9: ANDI x3, x1, 5
+        instruction = {
+            12'd5,       // Immediate
+            5'd1,        // rs1 = x1
+            3'b111,      // funct3
+            5'd3,        // rd = x3
+            7'b0010011   // I-type opcode
+        };
+        #1;
+
+        if (illegal !== 1'b0 ||
+            reg_write !== 1'b1 ||
+            alu_src !== 1'b1 ||
+            alu_control !== 3'b010 ||
+            imm_sel !== 2'b00 ||
+            mem_read !== 1'b0 ||
+            mem_write !== 1'b0 ||
+            mem_to_reg !== 1'b0 ||
+            branch !== 1'b0)
+            $fatal(1, "ANDI decode failed");
+
+
+        // Test 10: ORI x3, x1, 5
+        instruction = {
+            12'd5,
+            5'd1,
+            3'b110,
+            5'd3,
+            7'b0010011
+        };
+        #1;
+
+        if (illegal !== 1'b0 ||
+            reg_write !== 1'b1 ||
+            alu_src !== 1'b1 ||
+            alu_control !== 3'b011 ||
+            imm_sel !== 2'b00 ||
+            mem_read !== 1'b0 ||
+            mem_write !== 1'b0 ||
+            mem_to_reg !== 1'b0 ||
+            branch !== 1'b0)
+            $fatal(1, "ORI decode failed");
+
+
+        // Test 11: XORI x3, x1, 5
+        instruction = {
+            12'd5,
+            5'd1,
+            3'b100,
+            5'd3,
+            7'b0010011
+        };
+        #1;
+
+        if (illegal !== 1'b0 ||
+            reg_write !== 1'b1 ||
+            alu_src !== 1'b1 ||
+            alu_control !== 3'b100 ||
+            imm_sel !== 2'b00 ||
+            mem_read !== 1'b0 ||
+            mem_write !== 1'b0 ||
+            mem_to_reg !== 1'b0 ||
+            branch !== 1'b0)
+            $fatal(1, "XORI decode failed");
+
+
+        // Test 12: SLTI x3, x1, 5
+        instruction = {
+            12'd5,
+            5'd1,
+            3'b010,
+            5'd3,
+            7'b0010011
+        };
+        #1;
+
+        if (illegal !== 1'b0 ||
+            reg_write !== 1'b1 ||
+            alu_src !== 1'b1 ||
+            alu_control !== 3'b101 ||
+            imm_sel !== 2'b00 ||
+            mem_read !== 1'b0 ||
+            mem_write !== 1'b0 ||
+            mem_to_reg !== 1'b0 ||
+            branch !== 1'b0)
+            $fatal(1, "SLTI decode failed");
+
+	// Test 13: LW x3, 8(x1)
         instruction = {
 		12'd8,        // Immediate = 8
     		5'd1,         // rs1 = x1
@@ -205,7 +294,7 @@ module control_unit_tb;
   	 $fatal(1, "LW decode failed");
 
 
-	 // Test 10: SW x2, 12(x1)
+	 // Test 14: SW x2, 12(x1)
         instruction = {
 		7'd0,         // Immediate = 0
 		5'd2,         // rs2 = x2
@@ -229,7 +318,7 @@ module control_unit_tb;
 
 
 
-	 // Test 11: BEQ x1, x2, 16
+	 // Test 15: BEQ x1, x2, 16
 	instruction = {
     		1'b0,         // imm[12]
     		6'b0,         // imm[10:5]
@@ -253,7 +342,7 @@ module control_unit_tb;
    	 imm_sel !== 2'b10)
     	 $fatal(1, "BEQ decode failed");
 
-        $display("PASS: Control unit ADD/SUB/XOR/OR/AND/SLT/ADDI/LW/SW/BEQ tests");
+        $display("PASS: Control unit R-type and I-type decoding LW,SW and BEQ tests");
         $finish;
     end
 
