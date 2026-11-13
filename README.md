@@ -2,7 +2,7 @@
 
 An educational implementation of a small, single-cycle RISC-V processor written in Verilog. The project is developed incrementally to build a practical understanding of RTL design, datapath architecture, instruction decoding, and simulation-based verification.
 
-> **Status: Integrated baseline in progress.** The top-level `riscv_cpu` connects the current datapath modules. The implemented instruction subset is `ADD`, `SUB`, `ADDI`, `LW`, `SW`, and `BEQ`. This is an educational subset, not a complete or formally verified RV32I implementation.
+> **Status: Expanded single-cycle baseline.** The top-level `riscv_cpu` connects the datapath modules and supports arithmetic, logical, load/store, and BEQ instructions. This is an educational subset, not a complete or formally verified RV32I implementation.
 
 ## Project goals
 
@@ -14,20 +14,28 @@ An educational implementation of a small, single-cycle RISC-V processor written 
 
 ## Supported instruction subset
 
-The current Control Unit decodes the following instructions:
+The current Control Unit decodes the following instruction subset:
 
 | Instruction | Format | Current behavior |
 |---|---|---|
-| `ADD rd, rs1, rs2` | R | Adds two register operands and writes the result to `rd` |
-| `SUB rd, rs1, rs2` | R | Subtracts the second register operand from the first and writes to `rd` |
-| `ADDI rd, rs1, imm` | I | Adds a sign-extended 12-bit immediate to `rs1` and writes to `rd` |
-| `LW rd, imm(rs1)` | I | Loads a 32-bit word from data memory into `rd` |
-| `SW rs2, imm(rs1)` | S | Stores the 32-bit value from `rs2` to data memory |
-| `BEQ rs1, rs2, offset` | B | Compares registers and branches when they are equal |
+| `ADD rd, rs1, rs2` | R | Adds two register operands |
+| `SUB rd, rs1, rs2` | R | Subtracts the second register operand from the first |
+| `AND rd, rs1, rs2` | R | Bitwise AND of two register operands |
+| `OR rd, rs1, rs2` | R | Bitwise OR of two register operands |
+| `XOR rd, rs1, rs2` | R | Bitwise XOR of two register operands |
+| `SLT rd, rs1, rs2` | R | Signed less-than comparison |
+| `ADDI rd, rs1, imm` | I | Adds a sign-extended 12-bit immediate |
+| `ANDI rd, rs1, imm` | I | Bitwise AND with a sign-extended immediate |
+| `ORI rd, rs1, imm` | I | Bitwise OR with a sign-extended immediate |
+| `XORI rd, rs1, imm` | I | Bitwise XOR with a sign-extended immediate |
+| `SLTI rd, rs1, imm` | I | Signed less-than comparison against a sign-extended immediate |
+| `LW rd, imm(rs1)` | I | Loads a 32-bit word from data memory |
+| `SW rs2, imm(rs1)` | S | Stores a 32-bit register value to data memory |
+| `BEQ rs1, rs2, offset` | B | Branches when the two register operands are equal |
 
-The implemented decoder checks the relevant opcode and function fields for this subset. Other encodings are marked with the `illegal` output. The `illegal` signal is a decoder indication only; it does not currently trigger a processor exception or trap.
+The decoder checks the relevant opcode, `funct3`, and (for R-type instructions) `funct7` fields. Unsupported encodings are marked with the `illegal` output. This signal is a decoder indication only; it does not currently trigger a processor exception or trap.
 
-The standalone ALU also implements bitwise AND, bitwise OR, and signed less-than. Those operations are not currently decoded as CPU instructions by the Control Unit.
+The ALU implements ADD, SUB, AND, OR, XOR, and signed less-than operations. The Control Unit selects these operations for the corresponding supported R-type and I-type instructions.
 
 ## Top-level datapath
 
@@ -84,6 +92,8 @@ Programs are stored as hexadecimal text files. Each line contains one 32-bit ins
 | `programs/load_store.hex` | Exercises `ADDI`, `ADD`, `SW`, and `LW` |
 | `programs/forward_branch.hex` | Exercises a taken forward `BEQ` and a not-taken `BEQ` |
 | `programs/backward_branch.hex` | Exercises a negative branch offset and both taken and not-taken outcomes |
+| `programs/imm_logic.hex` | Exercises `ANDI`, `ORI`, `XORI`, and `SLTI` with positive immediates |
+| `programs/negative_imm.hex` | Exercises sign extension and signed `SLTI` with negative immediates |
 
 The processor testbenches load these files into the instruction memory with a hierarchical reference, for example:
 
@@ -139,6 +149,20 @@ iverilog -g2012 -Wall -s riscv_backward_branch_tb -o sim/riscv_backward_branch_s
 vvp sim/riscv_backward_branch_sim
 ```
 
+**I-type logical instructions**
+
+```bash
+iverilog -g2012 -Wall -s riscv_imm_logic_tb -o sim/riscv_imm_logic_sim rtl/*.v tb/riscv_imm_logic_tb.v
+vvp sim/riscv_imm_logic_sim
+```
+
+**Negative I-type immediates**
+
+```bash
+iverilog -g2012 -Wall -s riscv_negative_imm_tb -o sim/riscv_negative_imm_sim rtl/*.v tb/riscv_negative_imm_tb.v
+vvp sim/riscv_negative_imm_sim
+```
+
 The processor-level testbenches check the fetched instruction/PC sequence and selected architectural state through hierarchical references. Run them individually and inspect their output for the testbench PASS messages or any `$fatal` failure.
 
 ### Individual module and block tests
@@ -169,9 +193,9 @@ gtkwave sim/riscv_cpu.vcd
 
 ## Current design assumptions and limitations
 
-- **Instruction set:** The processor decoder currently supports only `ADD`, `SUB`, `ADDI`, `LW`, `SW`, and `BEQ`. Other RV32I instructions are not implemented.
+- **Instruction set:** The processor currently supports `ADD`, `SUB`, `AND`, `OR`, `XOR`, `SLT`, `ADDI`, `ANDI`, `ORI`, `XORI`, `SLTI`, `LW`, `SW`, and `BEQ`. Other RV32I instructions are not implemented.
 - **Immediate formats:** The Immediate Generator supports I-, S-, and B-type immediates. U- and J-type immediates are not implemented.
-- **ALU decoding:** AND, OR, and signed less-than exist in the standalone ALU, but are not currently selected by the Control Unit for CPU instructions.
+- **ALU decoding:** The Control Unit selects ADD, SUB, AND, OR, XOR, and signed less-than for the supported R-type and I-type instructions.
 - **Memory size:** Instruction Memory and Data Memory each contain 256 words × 32 bits (1 KiB).
 - **Address mapping:** Both memories use address bits `[9:2]` as the word index. This assumes aligned 32-bit accesses for the implemented `LW`/`SW` subset. The current implementation does not check alignment or enforce the high address bits as a memory-region bound; addresses can alias within the 256-word array.
 - **Data Memory timing:** Reads are asynchronous and writes occur on the rising clock edge. This is a behavioral model; FPGA block RAM implementations may require synchronous-read timing changes.
@@ -191,7 +215,7 @@ gtkwave sim/riscv_cpu.vcd
 
 ## Roadmap
 
-1. Expand the supported RV32I instruction subset (for example, additional arithmetic/logical operations and branch conditions).
+1. Expand the supported RV32I instruction subset with additional branch conditions and jump instructions.
 2. Improve verification with a reusable regression framework and more systematic architectural-state checking.
 3. Refine memory behavior and address validation; consider FPGA block RAM timing.
 4. Add jump instructions and appropriate next-PC selection.
