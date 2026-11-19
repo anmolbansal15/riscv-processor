@@ -2,7 +2,7 @@
 
 An educational implementation of a small, single-cycle RISC-V processor written in Verilog. The project is developed incrementally to build a practical understanding of RTL design, datapath architecture, instruction decoding, and simulation-based verification.
 
-> **Status: Expanded single-cycle baseline.** The top-level `riscv_cpu` connects the datapath modules and supports arithmetic, logical, load/store, and BEQ instructions. This is an educational subset, not a complete or formally verified RV32I implementation.
+> **Status: Expanded single-cycle baseline.** The top-level `riscv_cpu` connects the datapath modules and supports a 27-instruction RV32I subset covering register arithmetic, immediate arithmetic, shifts, comparisons, `LW`, `SW`, and all six conditional branches. This is an educational subset, not a complete or formally verified RV32I implementation.
 
 ## Project goals
 
@@ -24,18 +24,31 @@ The current Control Unit decodes the following instruction subset:
 | `OR rd, rs1, rs2` | R | Bitwise OR of two register operands |
 | `XOR rd, rs1, rs2` | R | Bitwise XOR of two register operands |
 | `SLT rd, rs1, rs2` | R | Signed less-than comparison |
+| `SLTU rd, rs1, rs2` | R | Unsigned less-than comparison |
+| `SLL rd, rs1, rs2` | R | Logical left shift by `rs2[4:0]` |
+| `SRL rd, rs1, rs2` | R | Logical right shift by `rs2[4:0]` |
+| `SRA rd, rs1, rs2` | R | Arithmetic right shift by `rs2[4:0]` |
 | `ADDI rd, rs1, imm` | I | Adds a sign-extended 12-bit immediate |
 | `ANDI rd, rs1, imm` | I | Bitwise AND with a sign-extended immediate |
 | `ORI rd, rs1, imm` | I | Bitwise OR with a sign-extended immediate |
 | `XORI rd, rs1, imm` | I | Bitwise XOR with a sign-extended immediate |
 | `SLTI rd, rs1, imm` | I | Signed less-than comparison against a sign-extended immediate |
+| `SLTIU rd, rs1, imm` | I | Unsigned less-than comparison against a sign-extended immediate |
+| `SLLI rd, rs1, shamt` | I | Logical left shift by the five-bit shift amount |
+| `SRLI rd, rs1, shamt` | I | Logical right shift by the five-bit shift amount |
+| `SRAI rd, rs1, shamt` | I | Arithmetic right shift by the five-bit shift amount |
 | `LW rd, imm(rs1)` | I | Loads a 32-bit word from data memory |
 | `SW rs2, imm(rs1)` | S | Stores a 32-bit register value to data memory |
 | `BEQ rs1, rs2, offset` | B | Branches when the two register operands are equal |
+| `BNE rs1, rs2, offset` | B | Branches when the two register operands are not equal |
+| `BLT rs1, rs2, offset` | B | Branches when signed `rs1` is less than signed `rs2` |
+| `BGE rs1, rs2, offset` | B | Branches when signed `rs1` is greater than or equal to signed `rs2` |
+| `BLTU rs1, rs2, offset` | B | Branches when unsigned `rs1` is less than unsigned `rs2` |
+| `BGEU rs1, rs2, offset` | B | Branches when unsigned `rs1` is greater than or equal to unsigned `rs2` |
 
 The decoder checks the relevant opcode, `funct3`, and (for R-type instructions) `funct7` fields. Unsupported encodings are marked with the `illegal` output. This signal is a decoder indication only; it does not currently trigger a processor exception or trap.
 
-The ALU implements ADD, SUB, AND, OR, XOR, and signed less-than operations. The Control Unit selects these operations for the corresponding supported R-type and I-type instructions.
+The ALU implements ADD, SUB, AND, OR, XOR, signed and unsigned less-than comparisons, and logical/arithmetic shifts. The Control Unit selects these operations for the corresponding supported R-type and I-type instructions. Shift amounts are taken from `rs2[4:0]` for register-register shifts and from the five-bit `shamt` field for immediate shifts.
 
 ## Top-level datapath
 
@@ -49,10 +62,10 @@ The top-level module is `rtl/riscv_cpu.v`. It instantiates and connects these bl
 | `immediate_generator` | Reconstructs and sign-extends I-, S-, and B-type immediates |
 | `register_file` | 32 × 32-bit register bank with two asynchronous read ports and one clocked write port |
 | `alu_operand_mux` | Selects register data or the immediate as ALU operand B |
-| `alu` | Performs arithmetic, logical, and comparison operations and generates a zero flag |
+| `alu` | Performs arithmetic, logical, comparison, and shift operations and generates a zero flag |
 | `data_memory` | Reads and writes 32-bit data words |
 | `writeback_mux` | Selects the ALU result or data-memory output for register write-back |
-| `next_pc_logic` | Selects `PC + 4` or `PC + immediate` when `branch & zero` is true |
+| `next_pc_logic` | Selects `PC + 4` or `PC + immediate` when `branch` and the evaluated branch condition are true |
 
 The top-level module exposes:
 - `clk` and `rst` inputs.
@@ -67,7 +80,7 @@ The top-level module exposes:
 3. The Register File supplies `rs1` and `rs2` values. The ALU operand mux selects either `rs2` data or the generated immediate for ALU operand B.
 4. The ALU result supplies the effective address for `LW` and `SW`. For `SW`, the store data comes directly from the Register File's second read port.
 5. The write-back mux selects the ALU result for arithmetic instructions or the data-memory output for `LW`.
-6. For `BEQ`, the ALU subtracts the two register operands. The Next-PC Logic selects the branch target when the Control Unit's `branch` signal and the ALU's `zero` flag are both asserted.
+6. For conditional branches, the ALU performs subtraction (`BEQ`/`BNE`), signed comparison (`BLT`/`BGE`), or unsigned comparison (`BLTU`/`BGEU`). The top-level branch-condition logic interprets the ALU zero flag according to `funct3`; the Next-PC Logic selects the branch target when the branch is enabled and its condition is satisfied.
 
 ## Repository layout
 
@@ -94,6 +107,7 @@ Programs are stored as hexadecimal text files. Each line contains one 32-bit ins
 | `programs/backward_branch.hex` | Exercises a negative branch offset and both taken and not-taken outcomes |
 | `programs/imm_logic.hex` | Exercises `ANDI`, `ORI`, `XORI`, and `SLTI` with positive immediates |
 | `programs/negative_imm.hex` | Exercises sign extension and signed `SLTI` with negative immediates |
+| `programs/shift_compare.hex` | Exercises register and immediate shifts, plus unsigned comparisons |
 
 The processor testbenches load these files into the instruction memory with a hierarchical reference, for example:
 
@@ -163,7 +177,16 @@ iverilog -g2012 -Wall -s riscv_negative_imm_tb -o sim/riscv_negative_imm_sim rtl
 vvp sim/riscv_negative_imm_sim
 ```
 
-The processor-level testbenches check the fetched instruction/PC sequence and selected architectural state through hierarchical references. Run them individually and inspect their output for the testbench PASS messages or any `$fatal` failure.
+**Shift and unsigned-comparison program**
+
+```bash
+iverilog -g2012 -Wall -s riscv_shift_compare_tb -o sim/riscv_shift_compare_sim rtl/*.v tb/riscv_shift_compare_tb.v
+vvp sim/riscv_shift_compare_sim
+```
+
+The processor-level testbenches check the fetched instruction/PC sequence and selected architectural state through hierarchical references. The shift/comparison program checks `SLL`, `SRL`, `SRA`, `SLTU`, `SLTIU`, `SLLI`, `SRLI`, and `SRAI` through the integrated datapath.
+
+The existing processor-level branch programs exercise taken and not-taken `BEQ` (including a backward branch). The Control Unit testbench checks decoding of all six branch conditions. Dedicated processor-level PC-transition tests for `BNE`, `BLT`, `BGE`, `BLTU`, and `BGEU` remain to be added.
 
 ### Individual module and block tests
 
@@ -193,15 +216,15 @@ gtkwave sim/riscv_cpu.vcd
 
 ## Current design assumptions and limitations
 
-- **Instruction set:** The processor currently supports `ADD`, `SUB`, `AND`, `OR`, `XOR`, `SLT`, `ADDI`, `ANDI`, `ORI`, `XORI`, `SLTI`, `LW`, `SW`, and `BEQ`. Other RV32I instructions are not implemented.
+- **Instruction set:** The processor decoder supports `ADD`, `SUB`, `SLL`, `SLT`, `SLTU`, `XOR`, `SRL`, `SRA`, `OR`, `AND`, `ADDI`, `SLLI`, `SLTI`, `SLTIU`, `XORI`, `SRLI`, `SRAI`, `ORI`, `ANDI`, `LW`, `SW`, `BEQ`, `BNE`, `BLT`, `BGE`, `BLTU`, and `BGEU`. Other RV32I instructions are not implemented.
 - **Immediate formats:** The Immediate Generator supports I-, S-, and B-type immediates. U- and J-type immediates are not implemented.
-- **ALU decoding:** The Control Unit selects ADD, SUB, AND, OR, XOR, and signed less-than for the supported R-type and I-type instructions.
+- **ALU decoding:** The four-bit ALU control selects ADD, SUB, AND, OR, XOR, signed/unsigned less-than, logical left/right shifts, and arithmetic right shifts.
 - **Memory size:** Instruction Memory and Data Memory each contain 256 words × 32 bits (1 KiB).
 - **Address mapping:** Both memories use address bits `[9:2]` as the word index. This assumes aligned 32-bit accesses for the implemented `LW`/`SW` subset. The current implementation does not check alignment or enforce the high address bits as a memory-region bound; addresses can alias within the 256-word array.
 - **Data Memory timing:** Reads are asynchronous and writes occur on the rising clock edge. This is a behavioral model; FPGA block RAM implementations may require synchronous-read timing changes.
 - **Register file:** The register file has no reset input. Register x0 always reads as zero, and writes to x0 are ignored. Other registers are not initialized by the RTL.
 - **Memory initialization:** Instruction memory is initialized by the processor testbench using `$readmemh`. Data memory is not reset or initialized by the RTL; tests should write locations before depending on their contents.
-- **Control-flow:** `BEQ` is implemented using subtraction and the ALU zero flag. Other branch conditions and jump instructions (`JAL`, `JALR`) are not implemented.
+- **Control-flow:** All six conditional branch encodings (`BEQ`, `BNE`, `BLT`, `BGE`, `BLTU`, and `BGEU`) are decoded. The top-level uses subtraction, signed comparison, or unsigned comparison and interprets the ALU zero flag according to `funct3`. Existing processor-level branch tests cover forward and backward `BEQ`; processor-level tests for the other five branch conditions are still pending. Jump instructions (`JAL`, `JALR`) are not implemented.
 - **Illegal instructions and traps:** `illegal` flags encodings unsupported by the current decoder. There is no exception/trap mechanism or halt behavior; the PC continues to follow the normal next-PC logic.
 - **Verification:** The testbenches are simulation-based and use hierarchical references for program loading and internal-state checking. The project has not been formally verified.
 
@@ -215,7 +238,7 @@ gtkwave sim/riscv_cpu.vcd
 
 ## Roadmap
 
-1. Expand the supported RV32I instruction subset with additional branch conditions and jump instructions.
+1. Add the remaining RV32I instructions, including additional load/store widths, upper-immediate operations, jumps, and system instructions.
 2. Improve verification with a reusable regression framework and more systematic architectural-state checking.
 3. Refine memory behavior and address validation; consider FPGA block RAM timing.
 4. Add jump instructions and appropriate next-PC selection.
