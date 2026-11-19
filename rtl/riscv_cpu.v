@@ -35,8 +35,9 @@ module riscv_cpu(
     wire mem_to_reg;
     wire branch;
 
-    wire [2:0] alu_control;
+    wire [3:0] alu_control;
     wire [1:0] imm_sel;
+    wire branch_condition_met;
 
 
     // 1. Program Counter
@@ -103,6 +104,18 @@ module riscv_cpu(
     	.zero(zero)
 	);
 
+	// Determine whether the current branch condition is satisfied
+	assign branch_condition_met =
+	    (instruction[14:12] == 3'b000) ?  zero :  // BEQ
+	    (instruction[14:12] == 3'b001) ? !zero :  // BNE
+	    (instruction[14:12] == 3'b100) ? !zero :  // BLT
+	    (instruction[14:12] == 3'b101) ?  zero :  // BGE
+	    (instruction[14:12] == 3'b110) ? !zero :  // BLTU
+	    (instruction[14:12] == 3'b111) ?  zero :  // BGEU
+	    1'b0;
+
+
+
 	// 8. Data Memory
 data_memory u_dmem (
     .clk(clk),
@@ -126,7 +139,7 @@ next_pc_logic u_next_pc (
     .pc(pc),
     .immediate(immediate),
     .branch(branch),
-    .zero(zero),
+    .zero(branch_condition_met),
     .next_pc(next_pc)
 );
 

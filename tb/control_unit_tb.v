@@ -8,7 +8,7 @@ module control_unit_tb;
     wire mem_write;
     wire mem_to_reg;
     wire branch;
-    wire [2:0] alu_control;
+    wire [3:0] alu_control;
     wire [1:0] imm_sel;
     wire illegal;
 
@@ -342,7 +342,212 @@ module control_unit_tb;
    	 imm_sel !== 2'b10)
     	 $fatal(1, "BEQ decode failed");
 
-        $display("PASS: Control unit R-type and I-type decoding LW,SW and BEQ tests");
+	 // Test 16: SLL
+	instruction = {7'b0000000, 5'd2, 5'd1,
+               3'b001, 5'd3, 7'b0110011};
+	#1;
+	if (illegal !== 1'b0 || reg_write !== 1'b1 ||
+	    alu_src !== 1'b0 || alu_control !== 4'b0111)
+	    $fatal(1, "SLL decode failed");
+
+
+	// Test 17: SLTU
+	instruction = {7'b0000000, 5'd2, 5'd1,
+               3'b011, 5'd3, 7'b0110011};
+	#1;
+	if (illegal !== 1'b0 || reg_write !== 1'b1 ||
+	    alu_src !== 1'b0 || alu_control !== 4'b0110)
+	    $fatal(1, "SLTU decode failed");
+
+
+	// Test 18: SRL
+	instruction = {7'b0000000, 5'd2, 5'd1,
+               3'b101, 5'd3, 7'b0110011};
+	#1;
+	if (illegal !== 1'b0 || reg_write !== 1'b1 ||
+	    alu_src !== 1'b0 || alu_control !== 4'b1000)
+	    $fatal(1, "SRL decode failed");
+
+
+	// Test 19: SRA
+	instruction = {7'b0100000, 5'd2, 5'd1,
+               3'b101, 5'd3, 7'b0110011};
+	#1;
+	if (illegal !== 1'b0 || reg_write !== 1'b1 ||
+	    alu_src !== 1'b0 || alu_control !== 4'b1001)
+	    $fatal(1, "SRA decode failed");
+
+	// Test 20: SLTIU x3, x1, 5
+	instruction = {12'd5, 5'd1, 3'b011,
+               5'd3, 7'b0010011};
+	#1;
+	if (illegal !== 1'b0 || reg_write !== 1'b1 ||
+	    alu_src !== 1'b1 || alu_control !== 4'b0110 ||
+	    imm_sel !== 2'b00)
+	    $fatal(1, "SLTIU decode failed");
+
+
+	// Test 21: SLLI x3, x1, 3
+	instruction = {7'b0000000, 5'd3, 5'd1,
+               3'b001, 5'd3, 7'b0010011};
+	#1;
+	if (illegal !== 1'b0 || reg_write !== 1'b1 ||
+	    alu_src !== 1'b1 || alu_control !== 4'b0111)
+	    $fatal(1, "SLLI decode failed");
+
+
+	// Test 22: SRLI x3, x1, 3
+	instruction = {7'b0000000, 5'd3, 5'd1,
+               3'b101, 5'd3, 7'b0010011};
+	#1;
+	if (illegal !== 1'b0 || reg_write !== 1'b1 ||
+	    alu_src !== 1'b1 || alu_control !== 4'b1000)
+	    $fatal(1, "SRLI decode failed");
+
+
+	// Test 23: SRAI x3, x1, 3
+	instruction = {7'b0100000, 5'd3, 5'd1,
+               3'b101, 5'd3, 7'b0010011};
+	#1;
+	if (illegal !== 1'b0 || reg_write !== 1'b1 ||
+	    alu_src !== 1'b1 || alu_control !== 4'b1001)
+	    $fatal(1, "SRAI decode failed");
+
+	// Test 21: Invalid SLLI encoding
+	instruction = {7'b0100000, 5'd3, 5'd1,
+               3'b001, 5'd3, 7'b0010011};
+	#1;
+	if (illegal !== 1'b1 || reg_write !== 1'b0)
+	    $fatal(1, "Invalid SLLI was accepted");
+
+
+	// Test 22: Invalid SRAI encoding
+	instruction = {7'b0000001, 5'd3, 5'd1,
+               3'b101, 5'd3, 7'b0010011};
+	#1;
+	if (illegal !== 1'b1 || reg_write !== 1'b0)
+	    $fatal(1, "Invalid SRAI was accepted");
+
+
+	// Test 23: Invalid R-type SLL encoding
+	instruction = {7'b0100000, 5'd2, 5'd1,
+               3'b001, 5'd3, 7'b0110011};
+	#1;
+	if (illegal !== 1'b1 || reg_write !== 1'b0)
+	    $fatal(1, "Invalid SLL encoding was accepted");
+
+
+	// Test 24: Invalid R-type SRA encoding
+	instruction = {7'b0000001, 5'd2, 5'd1,
+               3'b101, 5'd3, 7'b0110011};
+	#1;
+	if (illegal !== 1'b1 || reg_write !== 1'b0)
+	    $fatal(1, "Invalid SRA encoding was accepted");
+
+    	// Test 25: BNE x1, x2, offset
+	instruction = {
+    	7'b0000000,
+    	5'd2,
+    	5'd1,
+    	3'b001,
+    	5'b00000,
+    	7'b1100011
+	};
+	#1;
+
+	if (illegal !== 1'b0 ||
+	    branch !== 1'b1 ||
+	    alu_control !== 4'b0001 ||
+	    imm_sel !== 2'b10 ||
+	    reg_write !== 1'b0)
+	    $fatal(1, "BNE decode failed");
+
+	// Test 26: BLT x1, x2, offset
+	instruction = {
+	    7'b0000000,
+	    5'd2,
+	    5'd1,
+	    3'b100,
+	    5'b00000,
+	    7'b1100011
+	};
+	#1;
+
+	if (illegal !== 1'b0 ||
+	    branch !== 1'b1 ||
+	    alu_control !== 4'b0101 ||
+	    imm_sel !== 2'b10)
+	    $fatal(1, "BLT decode failed");
+
+	    //Test 27: BGE x1, x2, offset
+instruction = {
+    7'b0000000,
+    5'd2,
+    5'd1,
+    3'b101,
+    5'b00000,
+    7'b1100011
+};
+#1;
+
+if (illegal !== 1'b0 ||
+    branch !== 1'b1 ||
+    alu_control !== 4'b0101 ||
+    imm_sel !== 2'b10)
+    $fatal(1, "BGE decode failed");
+
+    //Test 28: BLTU x1, x2, offset
+instruction = {
+    7'b0000000,
+    5'd2,
+    5'd1,
+    3'b110,
+    5'b00000,
+    7'b1100011
+};
+#1;
+
+if (illegal !== 1'b0 ||
+    branch !== 1'b1 ||
+    alu_control !== 4'b0110 ||
+    imm_sel !== 2'b10)
+    $fatal(1, "BLTU decode failed");
+
+    //Test 29: BGEU x1, x2, offset
+instruction = {
+    7'b0000000,
+    5'd2,
+    5'd1,
+    3'b111,
+    5'b00000,
+    7'b1100011
+};
+#1;
+
+if (illegal !== 1'b0 ||
+    branch !== 1'b1 ||
+    alu_control !== 4'b0110 ||
+    imm_sel !== 2'b10)
+    $fatal(1, "BGEU decode failed");
+
+    //Invalid: Reserved branch funct3 = 010
+instruction = {
+    7'b0000000,
+    5'd2,
+    5'd1,
+    3'b010,
+    5'b00000,
+    7'b1100011
+};
+#1;
+
+if (illegal !== 1'b1 ||
+    branch !== 1'b0 ||
+    reg_write !== 1'b0)
+    $fatal(1, "Invalid branch encoding accepted");
+
+
+        $display("PASS:All Control unit instruction decoding tests");
         $finish;
     end
 

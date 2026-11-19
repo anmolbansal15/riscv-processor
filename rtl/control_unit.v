@@ -8,7 +8,7 @@ module control_unit (
     output reg         mem_to_reg,
     output reg         branch,
 
-    output reg  [2:0]  alu_control,
+    output reg  [3:0]  alu_control,
     output reg  [1:0]  imm_sel,
     output reg         illegal
 );
@@ -26,7 +26,7 @@ module control_unit (
         mem_write   = 1'b0;
         mem_to_reg  = 1'b0;
         branch      = 1'b0;
-        alu_control = 3'b000;
+        alu_control = 4'b0000;
         imm_sel     = 2'b00;
         illegal     = 1'b1;
 
@@ -37,111 +37,181 @@ module control_unit (
                 case (funct3)
 
                     3'b000: begin
-                        if (funct7 == 7'b0000000) begin
-                            // ADD
-                            reg_write   = 1'b1;
-                            alu_control = 3'b000;
-                            illegal     = 1'b0;
-                        end
-                        else if (funct7 == 7'b0100000) begin
-                            // SUB
-                            reg_write   = 1'b1;
-                            alu_control = 3'b001;
-                            illegal     = 1'b0;
-                        end
-                    end
+            if (funct7 == 7'b0000000) begin
+                reg_write   = 1'b1;
+                alu_control = 4'b0000;  // ADD
+                illegal     = 1'b0;
+            end
+            else if (funct7 == 7'b0100000) begin
+                reg_write   = 1'b1;
+                alu_control = 4'b0001;  // SUB
+                illegal     = 1'b0;
+            end
+        end
 
-                    3'b100: begin
-                        // XOR
-                        if (funct7 == 7'b0000000) begin
-                            reg_write   = 1'b1;
-                            alu_control = 3'b100;
-                            illegal     = 1'b0;
-                        end
-                    end
+        // SLL
+        3'b001: begin
+            if (funct7 == 7'b0000000) begin
+                reg_write   = 1'b1;
+                alu_control = 4'b0111;
+                illegal     = 1'b0;
+            end
+        end
 
-                    3'b110: begin
-                        // OR
-                        if (funct7 == 7'b0000000) begin
-                            reg_write   = 1'b1;
-                            alu_control = 3'b011;
-                            illegal     = 1'b0;
-                        end
-                    end
+        // SLT
+        3'b010: begin
+            if (funct7 == 7'b0000000) begin
+                reg_write   = 1'b1;
+                alu_control = 4'b0101;
+                illegal     = 1'b0;
+            end
+        end
 
-                    3'b111: begin
-                        // AND
-                        if (funct7 == 7'b0000000) begin
-                            reg_write   = 1'b1;
-                            alu_control = 3'b010;
-                            illegal     = 1'b0;
-                        end
-                    end
+        // SLTU
+        3'b011: begin
+            if (funct7 == 7'b0000000) begin
+                reg_write   = 1'b1;
+                alu_control = 4'b0110;
+                illegal     = 1'b0;
+            end
+        end
 
-                    3'b010: begin
-                        // SLT
-                        if (funct7 == 7'b0000000) begin
-                            reg_write   = 1'b1;
-                            alu_control = 3'b101;
-                            illegal     = 1'b0;
-                        end
-                    end
+        // XOR
+        3'b100: begin
+            if (funct7 == 7'b0000000) begin
+                reg_write   = 1'b1;
+                alu_control = 4'b0100;
+                illegal     = 1'b0;
+            end
+        end
+
+        // SRL / SRA
+        3'b101: begin
+            if (funct7 == 7'b0000000) begin
+                reg_write   = 1'b1;
+                alu_control = 4'b1000;  // SRL
+                illegal     = 1'b0;
+            end
+            else if (funct7 == 7'b0100000) begin
+                reg_write   = 1'b1;
+                alu_control = 4'b1001;  // SRA
+                illegal     = 1'b0;
+            end
+        end
+
+        // OR
+        3'b110: begin
+            if (funct7 == 7'b0000000) begin
+                reg_write   = 1'b1;
+                alu_control = 4'b0011;
+                illegal     = 1'b0;
+            end
+        end
+
+        // AND
+        3'b111: begin
+            if (funct7 == 7'b0000000) begin
+                reg_write   = 1'b1;
+                alu_control = 4'b0010;
+                illegal     = 1'b0;
+            end
+        end
 
                 endcase
             end
 
-            // I-type
-            7'b0010011: begin
+            // I-type arithmetic, logical, comparison and shift instructions
+7'b0010011: begin
 
-		    case(funct3)
-			    3'b000: begin
-				    //ADDI
-				    reg_write   = 1'b1;
-				    alu_src     = 1'b1;
-				    alu_control = 3'b000;
-				    imm_sel     = 2'b00;
-				    illegal     = 1'b0;
-			    end
+    case (funct3)
 
-			    3'b111: begin
-				    //ANDI
-				    reg_write   = 1'b1;
-				    alu_src     = 1'b1;
-				    alu_control = 3'b010;
-				    imm_sel     = 2'b00;
-				    illegal     = 1'b0;
-			    end
+        // ADDI
+        3'b000: begin
+            reg_write   = 1'b1;
+            alu_src     = 1'b1;
+            alu_control = 4'b0000;
+            imm_sel     = 2'b00;
+            illegal     = 1'b0;
+        end
 
-			    3'b110: begin
-				    //ORI
-				    reg_write   = 1'b1;
-				    alu_src     = 1'b1;
-				    alu_control = 3'b011;
-				    imm_sel     = 2'b00;
-				    illegal     = 1'b0;
-			    end
+        // SLLI
+        3'b001: begin
+            if (funct7 == 7'b0000000) begin
+                reg_write   = 1'b1;
+                alu_src     = 1'b1;
+                alu_control = 4'b0111;
+                imm_sel     = 2'b00;
+                illegal     = 1'b0;
+            end
+        end
 
-			    3'b100: begin
-				    //XORI
-				    reg_write   = 1'b1;
-				    alu_src     = 1'b1;
-				    alu_control = 3'b100;
-				    imm_sel     = 2'b00;
-				    illegal     = 1'b0;
-			    end
+        // SLTI
+        3'b010: begin
+            reg_write   = 1'b1;
+            alu_src     = 1'b1;
+            alu_control = 4'b0101;
+            imm_sel     = 2'b00;
+            illegal     = 1'b0;
+        end
 
-			    3'b010: begin
-				    //SLTI
-				    reg_write   = 1'b1;
-				    alu_src     = 1'b1;
-				    alu_control = 3'b101;
-				    imm_sel     = 2'b00;
-				    illegal     = 1'b0;
-			    end
+        // SLTIU
+        3'b011: begin
+            reg_write   = 1'b1;
+            alu_src     = 1'b1;
+            alu_control = 4'b0110;
+            imm_sel     = 2'b00;
+            illegal     = 1'b0;
+        end
 
-		    endcase		    
-	    end
+        // XORI
+        3'b100: begin
+            reg_write   = 1'b1;
+            alu_src     = 1'b1;
+            alu_control = 4'b0100;
+            imm_sel     = 2'b00;
+            illegal     = 1'b0;
+        end
 
+        // SRLI / SRAI
+        3'b101: begin
+            if (funct7 == 7'b0000000) begin
+                // SRLI
+                reg_write   = 1'b1;
+                alu_src     = 1'b1;
+                alu_control = 4'b1000;
+                imm_sel     = 2'b00;
+                illegal     = 1'b0;
+            end
+            else if (funct7 == 7'b0100000) begin
+                // SRAI
+                reg_write   = 1'b1;
+                alu_src     = 1'b1;
+                alu_control = 4'b1001;
+                imm_sel     = 2'b00;
+                illegal     = 1'b0;
+            end
+        end
+
+        // ORI
+        3'b110: begin
+            reg_write   = 1'b1;
+            alu_src     = 1'b1;
+            alu_control = 4'b0011;
+            imm_sel     = 2'b00;
+            illegal     = 1'b0;
+        end
+
+        // ANDI
+        3'b111: begin
+            reg_write   = 1'b1;
+            alu_src     = 1'b1;
+            alu_control = 4'b0010;
+            imm_sel     = 2'b00;
+            illegal     = 1'b0;
+        end
+
+    endcase
+end
             // I-type: LW
             7'b0000011: begin
                 if (funct3 == 3'b010) begin
@@ -149,7 +219,7 @@ module control_unit (
                     alu_src     = 1'b1;
                     mem_read    = 1'b1;
                     mem_to_reg  = 1'b1;
-                    alu_control = 3'b000;
+                    alu_control = 4'b0000;
                     imm_sel     = 2'b00;
                     illegal     = 1'b0;
                 end
@@ -165,16 +235,61 @@ module control_unit (
                 end
             end
 
-            // B-type: BEQ
-            7'b1100011: begin
-                if (funct3 == 3'b000) begin
-                    alu_control = 3'b001;
-                    imm_sel     = 2'b10;
-                    branch      = 1'b1;
-                    illegal     = 1'b0;
-                end
-            end
+            // B-type branch instructions
+	7'b1100011: begin
 
+	    case (funct3)
+
+	        // BEQ
+	        3'b000: begin
+	            alu_control = 4'b0001;  // SUB
+	            branch      = 1'b1;
+	            imm_sel     = 2'b10;
+	            illegal     = 1'b0;
+	        end
+
+	        // BNE
+	        3'b001: begin
+	            alu_control = 4'b0001;  // SUB
+	            branch      = 1'b1;
+	            imm_sel     = 2'b10;
+	            illegal     = 1'b0;
+	        end
+
+	        // BLT
+	        3'b100: begin
+	            alu_control = 4'b0101;  // SLT
+	            branch      = 1'b1;
+	            imm_sel     = 2'b10;
+	            illegal     = 1'b0;
+	        end
+
+	        // BGE
+	        3'b101: begin
+	            alu_control = 4'b0101;  // SLT
+	            branch      = 1'b1;
+	            imm_sel     = 2'b10;
+	            illegal     = 1'b0;
+	        end
+
+	        // BLTU
+        	3'b110: begin
+            	alu_control = 4'b0110;  // SLTU
+            	branch      = 1'b1;
+            	imm_sel     = 2'b10;
+            	illegal     = 1'b0;
+        	end
+
+        	// BGEU
+        	3'b111: begin
+            	alu_control = 4'b0110;  // SLTU
+            	branch      = 1'b1;
+            	imm_sel     = 2'b10;
+            	illegal     = 1'b0;
+        	end
+
+    	endcase
+	end
             default: begin
                 // Retain default control signals
             end
