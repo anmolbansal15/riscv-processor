@@ -546,6 +546,49 @@ if (illegal !== 1'b1 ||
     reg_write !== 1'b0)
     $fatal(1, "Invalid branch encoding accepted");
 
+    // LB
+instruction = {12'd0, 5'd1, 3'b000, 5'd3, 7'b0000011};
+#1;
+if (illegal !== 0 || reg_write !== 1 ||
+    mem_read !== 1 || mem_to_reg !== 1 ||
+    alu_src !== 1 || imm_sel !== 2'b00)
+    $fatal(1, "LB decode failed");
+
+// LH
+instruction = {12'd0, 5'd1, 3'b001, 5'd3, 7'b0000011};
+#1;
+if (illegal !== 0 || reg_write !== 1 ||
+    mem_read !== 1 || mem_to_reg !== 1)
+    $fatal(1, "LH decode failed");
+
+// LBU
+instruction = {12'd0, 5'd1, 3'b100, 5'd3, 7'b0000011};
+#1;
+if (illegal !== 0 || reg_write !== 1 ||
+    mem_read !== 1 || mem_to_reg !== 1)
+    $fatal(1, "LBU decode failed");
+
+// LHU
+instruction = {12'd0, 5'd1, 3'b101, 5'd3, 7'b0000011};
+#1;
+if (illegal !== 0 || reg_write !== 1 ||
+    mem_read !== 1 || mem_to_reg !== 1)
+    $fatal(1, "LHU decode failed");
+
+// SB
+instruction = {7'd0, 5'd2, 5'd1, 3'b000, 5'd0, 7'b0100011};
+#1;
+if (illegal !== 0 || mem_write !== 1 ||
+    alu_src !== 1 || imm_sel !== 2'b01)
+    $fatal(1, "SB decode failed");
+
+// SH
+instruction = {7'd0, 5'd2, 5'd1, 3'b001, 5'd0, 7'b0100011};
+#1;
+if (illegal !== 0 || mem_write !== 1 ||
+    alu_src !== 1 || imm_sel !== 2'b01)
+    $fatal(1, "SH decode failed");
+
 
         $display("PASS:All Control unit instruction decoding tests");
         $finish;

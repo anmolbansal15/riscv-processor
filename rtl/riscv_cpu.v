@@ -19,6 +19,7 @@ module riscv_cpu(
     wire [31:0] immediate;
 
     // ALU
+    wire [31:0] alu_operand_a;
     wire [31:0] alu_operand_b;
     wire [31:0] alu_result;
     wire zero;
@@ -37,6 +38,7 @@ module riscv_cpu(
 
     wire [3:0] alu_control;
     wire [1:0] imm_sel;
+    wire [1:0] alu_a_sel;
     wire branch_condition_met;
 
 
@@ -65,6 +67,7 @@ module riscv_cpu(
         .branch(branch),
         .alu_control(alu_control),
         .imm_sel(imm_sel),
+	.alu_a_sel(alu_a_sel),
         .illegal(illegal)
     );
 
@@ -95,9 +98,17 @@ module riscv_cpu(
     	.alu_operand_b(alu_operand_b)
 	);
 
-	// 7. ALU
+	//7. ALU Operand-A MUX
+alu_operand_a_mux u_alu_a_mux (
+    .read_data1(read_data1),
+    .pc(pc),
+    .alu_a_sel(alu_a_sel),
+    .alu_operand_a(alu_operand_a)
+);
+
+	// 8. ALU
 	alu u_alu (
-    	.operand_a(read_data1),
+    	.operand_a(alu_operand_a),
     	.operand_b(alu_operand_b),
     	.alu_control(alu_control),
     	.result(alu_result),
@@ -116,17 +127,18 @@ module riscv_cpu(
 
 
 
-	// 8. Data Memory
+	// 9. Data Memory
 data_memory u_dmem (
     .clk(clk),
     .mem_read(mem_read),
     .mem_write(mem_write),
     .address(alu_result),
     .write_data(read_data2),
+    .funct3(instruction[14:12]),
     .read_data(memory_read_data)
 );
 
-// 9. Write-Back MUX
+// 10. Write-Back MUX
 writeback_mux u_wb_mux (
     .alu_result(alu_result),
     .memory_read_data(memory_read_data),
@@ -134,7 +146,7 @@ writeback_mux u_wb_mux (
     .write_data(write_data)
 );
 
-// 10. Next-PC Logic
+// 11. Next-PC Logic
 next_pc_logic u_next_pc (
     .pc(pc),
     .immediate(immediate),

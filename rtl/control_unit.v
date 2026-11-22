@@ -10,6 +10,7 @@ module control_unit (
 
     output reg  [3:0]  alu_control,
     output reg  [1:0]  imm_sel,
+    output reg  [1:0]  alu_a_sel,
     output reg         illegal
 );
 
@@ -28,6 +29,7 @@ module control_unit (
         branch      = 1'b0;
         alu_control = 4'b0000;
         imm_sel     = 2'b00;
+	alu_a_sel = 2'b00;
         illegal     = 1'b1;
 
         case (opcode)
@@ -212,28 +214,95 @@ module control_unit (
 
     endcase
 end
-            // I-type: LW
-            7'b0000011: begin
-                if (funct3 == 3'b010) begin
-                    reg_write   = 1'b1;
-                    alu_src     = 1'b1;
-                    mem_read    = 1'b1;
-                    mem_to_reg  = 1'b1;
-                    alu_control = 4'b0000;
-                    imm_sel     = 2'b00;
-                    illegal     = 1'b0;
-                end
-            end
+            // Load instructions
+7'b0000011: begin
 
-            // S-type: SW
-            7'b0100011: begin
-                if (funct3 == 3'b010) begin
-                    alu_src   = 1'b1;
-                    mem_write = 1'b1;
-                    imm_sel   = 2'b01;
-                    illegal   = 1'b0;
-                end
-            end
+    case (funct3)
+
+        // LB
+        3'b000: begin
+            reg_write  = 1'b1;
+            alu_src    = 1'b1;
+            mem_read   = 1'b1;
+            mem_to_reg = 1'b1;
+            imm_sel    = 2'b00;
+            illegal    = 1'b0;
+        end
+
+        // LH
+        3'b001: begin
+            reg_write  = 1'b1;
+            alu_src    = 1'b1;
+            mem_read   = 1'b1;
+            mem_to_reg = 1'b1;
+            imm_sel    = 2'b00;
+            illegal    = 1'b0;
+        end
+
+        // LW
+        3'b010: begin
+            reg_write  = 1'b1;
+            alu_src    = 1'b1;
+            mem_read   = 1'b1;
+            mem_to_reg = 1'b1;
+            imm_sel    = 2'b00;
+            illegal    = 1'b0;
+        end
+
+        // LBU
+        3'b100: begin
+            reg_write  = 1'b1;
+            alu_src    = 1'b1;
+            mem_read   = 1'b1;
+            mem_to_reg = 1'b1;
+            imm_sel    = 2'b00;
+            illegal    = 1'b0;
+        end
+
+        // LHU
+        3'b101: begin
+            reg_write  = 1'b1;
+            alu_src    = 1'b1;
+            mem_read   = 1'b1;
+            mem_to_reg = 1'b1;
+            imm_sel    = 2'b00;
+            illegal    = 1'b0;
+        end
+
+    endcase
+end
+
+            // Store instructions
+7'b0100011: begin
+
+    case (funct3)
+
+        // SB
+        3'b000: begin
+            alu_src   = 1'b1;
+            mem_write = 1'b1;
+            imm_sel   = 2'b01;
+            illegal   = 1'b0;
+        end
+
+        // SH
+        3'b001: begin
+            alu_src   = 1'b1;
+            mem_write = 1'b1;
+            imm_sel   = 2'b01;
+            illegal   = 1'b0;
+        end
+
+        // SW
+        3'b010: begin
+            alu_src   = 1'b1;
+            mem_write = 1'b1;
+            imm_sel   = 2'b01;
+            illegal   = 1'b0;
+        end
+
+    endcase
+end
 
             // B-type branch instructions
 	7'b1100011: begin
@@ -290,6 +359,32 @@ end
 
     	endcase
 	end
+
+// U-type: LUI
+7'b0110111: begin
+
+    reg_write   = 1'b1;
+    alu_src     = 1'b1;
+    alu_a_sel   = 2'b10;  // Select zero
+    alu_control = 4'b0000; // ADD
+    imm_sel     = 2'b11;   // U-type
+    illegal     = 1'b0;
+
+end
+
+
+// U-type: AUIPC
+7'b0010111: begin
+
+    reg_write   = 1'b1;
+    alu_src     = 1'b1;
+    alu_a_sel   = 2'b01;  // Select PC
+    alu_control = 4'b0000; // ADD
+    imm_sel     = 2'b11;   // U-type
+    illegal     = 1'b0;
+
+end
+
             default: begin
                 // Retain default control signals
             end

@@ -3,118 +3,130 @@ module data_memory_tb;
     reg clk;
     reg mem_read;
     reg mem_write;
+
     reg [31:0] address;
     reg [31:0] write_data;
+    reg [2:0] funct3;
 
     wire [31:0] read_data;
 
-    integer errors;
-
-    // Instantiate DUT
-    data_memory uut (
+    data_memory dut (
         .clk(clk),
         .mem_read(mem_read),
         .mem_write(mem_write),
         .address(address),
         .write_data(write_data),
+        .funct3(funct3),
         .read_data(read_data)
     );
 
-    // Clock generation: 10 ns period
+    initial clk = 0;
     always #5 clk = ~clk;
 
-    // Task to write a word into memory
-    task write_word;
+    // Check load result
+    task check_load;
         input [31:0] addr;
-        input [31:0] data;
-
-        begin
-            @(negedge clk);
-            address = addr;
-            write_data = data;
-            mem_write = 1;
-            mem_read = 0;
-
-            @(posedge clk);
-            #1;
-            mem_write = 0;
-        end
-    endtask
-
-    // Task to read and verify a word
-    task check_read;
-        input [31:0] addr;
+        input [2:0] operation;
         input [31:0] expected;
 
         begin
-            @(negedge clk);
             address = addr;
-            mem_read = 1;
-            mem_write = 0;
-
+            funct3 = operation;
+            mem_read = 1'b1;
             #1;
 
-            if (read_data !== expected) begin
-                $display("FAIL: Address=%0d Expected=%0d Actual=%0d",
-                          addr, expected, read_data);
-                errors = errors + 1;
-            end
-            else begin
-                $display("PASS: Address=%0d Data=%0d",
-                          addr, read_data);
-            end
+            if (read_data !== expected)
+                $fatal(1,
+                    "Load failed: address=%h funct3=%b expected=%h actual=%h",
+                    addr, operation, expected, read_data);
+
+            $display("LOAD PASS: address=%h funct3=%b result=%h",
+                     addr, operation, read_data);
         end
     endtask
 
-    // Main test sequence
-    initial begin
+    // Perform store operation
+    task perform_store;
+        input [31:0] addr;
+        input [2:0] operation;
+        input [31:0] value;
 
-        clk = 0;
-        mem_read = 0;
-        mem_write = 0;
-        address = 0;
-        write_data = 0;
-        errors = 0;
+        begin
+            @(negedge clk);
+
+            address = addr;
+            funct3 = operation;
+            write_data = value;
+            mem_read = 1'b0;
+            mem_write = 1'b1;
+
+            @(posedge clk);
+            #1;
+
+            mem_write = 1'b0;
+        end
+    endtask
+
+    initial begin
 
         $dumpfile("sim/data_memory.vcd");
         $dumpvars(0, data_memory_tb);
 
-        // Test 1: Write 42 at byte address 8
-        write_word(32'd8, 32'd42);
-
-        // Test 2: Read address 8
-        check_read(32'd8, 32'd42);
-
-        // Test 3: Write 99 at byte address 12
-        write_word(32'd12, 32'd99);
-
-        // Test 4: Read address 12
-        check_read(32'd12, 32'd99);
-
-        // Test 5: Disable read and check output
-        @(negedge clk);
         mem_read = 0;
         mem_write = 0;
-        address = 32'd8;
+        address = 0;
+        write_data = 0;
+        funct3 = 0;
 
-        #1;
+        // Initialize memory for testing
+        dut.memory[0] = 32'hA1B2C3D4;
+        dut.memory[1] = 32'hAABBCCDD;
 
-        if (read_data !== 32'd0) begin
-            $display("FAIL: Read disabled, expected 0, got %0d",
-                      read_data);
-            errors = errors + 1;
-        end
-        else begin
-            $display("PASS: Read disabled, output is 0");
-        end
+        // ---------------- LOAD TESTS ----------------
 
-        // Final result
-        if (errors == 0)
-            $display("\nALL TESTS PASSED");
-        else
-            $display("\nTESTS FAILED: %0d errors", errors);
+        // LB
+        check_load(0, 3'b000, 32'hFFFFFFD4);
+        check_load(1, 3'b000, 32'hFFFFFFC3);
+
+        // LBU
+        check_load(0, 3'b100, 32'h000000D4);
+        check_load(1, 3'b100, 32'h000000C3);
+
+        // LH
+        check_load(0, 3'b001, 32'hFFFFC3D4);
+        check_load(2, 3'b001, 32'hFFFFA1B2);
+
+        // LHU
+        check_load(0, 3'b101, 32'h0000C3D4);
+        check_load(2, 3'b101, 32'h0000A1B2);
+
+        // LW
+        check_load(0, 3'b010, 32'hA1B2C3D4);
+
+        // ---------------- STORE TESTS ----------------
+
+        // SB: Replace byte at address 5
+        perform_store(5, 3'b000, 32'h12345678);
+
+        if (dut.memory[1] !== 32'hAABB78DD)
+            $fatal(1, "SB failed");
+
+        // SH: Replace upper halfword at address 6
+        perform_store(6, 3'b001, 32'h12345678);
+
+        if (dut.memory[1] !== 32'h567878DD)
+            $fatal(1, "SH failed");
+
+        // SW: Replace complete word at address 8
+        perform_store(8, 3'b010, 32'hDEADBEEF);
+
+        if (dut.memory[2] !== 32'hDEADBEEF)
+            $fatal(1, "SW failed");
+
+        $display("\nALL DATA MEMORY TESTS PASSED");
 
         $finish;
+
     end
 
 endmodule
