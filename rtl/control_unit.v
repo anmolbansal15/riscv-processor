@@ -9,9 +9,16 @@ module control_unit (
     output reg         branch,
 
     output reg  [3:0]  alu_control,
-    output reg  [1:0]  imm_sel,
+    output reg  [2:0]  imm_sel,
     output reg  [1:0]  alu_a_sel,
-    output reg         illegal
+    output reg         illegal,
+
+    output reg jal,
+    output reg link,
+    output reg jalr,
+
+    output reg        exception_valid,
+    output reg [31:0] exception_cause
 );
 
     wire [6:0] opcode = instruction[6:0];
@@ -28,9 +35,15 @@ module control_unit (
         mem_to_reg  = 1'b0;
         branch      = 1'b0;
         alu_control = 4'b0000;
-        imm_sel     = 2'b00;
-	alu_a_sel = 2'b00;
+        imm_sel     = 3'b000;
+	alu_a_sel = 3'b000;
         illegal     = 1'b1;
+	jal  = 1'b0;
+	link = 1'b0;
+	jalr = 1'b0;
+
+	exception_valid = 1'b0;
+	exception_cause = 32'b0;
 
         case (opcode)
 
@@ -132,7 +145,7 @@ module control_unit (
             reg_write   = 1'b1;
             alu_src     = 1'b1;
             alu_control = 4'b0000;
-            imm_sel     = 2'b00;
+            imm_sel     = 3'b000;
             illegal     = 1'b0;
         end
 
@@ -142,7 +155,7 @@ module control_unit (
                 reg_write   = 1'b1;
                 alu_src     = 1'b1;
                 alu_control = 4'b0111;
-                imm_sel     = 2'b00;
+                imm_sel     = 3'b000;
                 illegal     = 1'b0;
             end
         end
@@ -152,7 +165,7 @@ module control_unit (
             reg_write   = 1'b1;
             alu_src     = 1'b1;
             alu_control = 4'b0101;
-            imm_sel     = 2'b00;
+            imm_sel     = 3'b000;
             illegal     = 1'b0;
         end
 
@@ -161,7 +174,7 @@ module control_unit (
             reg_write   = 1'b1;
             alu_src     = 1'b1;
             alu_control = 4'b0110;
-            imm_sel     = 2'b00;
+            imm_sel     = 3'b000;
             illegal     = 1'b0;
         end
 
@@ -170,7 +183,7 @@ module control_unit (
             reg_write   = 1'b1;
             alu_src     = 1'b1;
             alu_control = 4'b0100;
-            imm_sel     = 2'b00;
+            imm_sel     = 3'b000;
             illegal     = 1'b0;
         end
 
@@ -181,7 +194,7 @@ module control_unit (
                 reg_write   = 1'b1;
                 alu_src     = 1'b1;
                 alu_control = 4'b1000;
-                imm_sel     = 2'b00;
+                imm_sel     = 3'b000;
                 illegal     = 1'b0;
             end
             else if (funct7 == 7'b0100000) begin
@@ -189,7 +202,7 @@ module control_unit (
                 reg_write   = 1'b1;
                 alu_src     = 1'b1;
                 alu_control = 4'b1001;
-                imm_sel     = 2'b00;
+                imm_sel     = 3'b000;
                 illegal     = 1'b0;
             end
         end
@@ -199,7 +212,7 @@ module control_unit (
             reg_write   = 1'b1;
             alu_src     = 1'b1;
             alu_control = 4'b0011;
-            imm_sel     = 2'b00;
+            imm_sel     = 3'b000;
             illegal     = 1'b0;
         end
 
@@ -208,7 +221,7 @@ module control_unit (
             reg_write   = 1'b1;
             alu_src     = 1'b1;
             alu_control = 4'b0010;
-            imm_sel     = 2'b00;
+            imm_sel     = 3'b000;
             illegal     = 1'b0;
         end
 
@@ -225,7 +238,7 @@ end
             alu_src    = 1'b1;
             mem_read   = 1'b1;
             mem_to_reg = 1'b1;
-            imm_sel    = 2'b00;
+            imm_sel    = 3'b000;
             illegal    = 1'b0;
         end
 
@@ -235,7 +248,7 @@ end
             alu_src    = 1'b1;
             mem_read   = 1'b1;
             mem_to_reg = 1'b1;
-            imm_sel    = 2'b00;
+            imm_sel    = 3'b000;
             illegal    = 1'b0;
         end
 
@@ -245,7 +258,7 @@ end
             alu_src    = 1'b1;
             mem_read   = 1'b1;
             mem_to_reg = 1'b1;
-            imm_sel    = 2'b00;
+            imm_sel    = 3'b000;
             illegal    = 1'b0;
         end
 
@@ -255,7 +268,7 @@ end
             alu_src    = 1'b1;
             mem_read   = 1'b1;
             mem_to_reg = 1'b1;
-            imm_sel    = 2'b00;
+            imm_sel    = 3'b000;
             illegal    = 1'b0;
         end
 
@@ -265,7 +278,7 @@ end
             alu_src    = 1'b1;
             mem_read   = 1'b1;
             mem_to_reg = 1'b1;
-            imm_sel    = 2'b00;
+            imm_sel    = 3'b000;
             illegal    = 1'b0;
         end
 
@@ -281,7 +294,7 @@ end
         3'b000: begin
             alu_src   = 1'b1;
             mem_write = 1'b1;
-            imm_sel   = 2'b01;
+            imm_sel   = 3'b001;
             illegal   = 1'b0;
         end
 
@@ -289,7 +302,7 @@ end
         3'b001: begin
             alu_src   = 1'b1;
             mem_write = 1'b1;
-            imm_sel   = 2'b01;
+            imm_sel   = 3'b001;
             illegal   = 1'b0;
         end
 
@@ -297,7 +310,7 @@ end
         3'b010: begin
             alu_src   = 1'b1;
             mem_write = 1'b1;
-            imm_sel   = 2'b01;
+            imm_sel   = 3'b001;
             illegal   = 1'b0;
         end
 
@@ -313,7 +326,7 @@ end
 	        3'b000: begin
 	            alu_control = 4'b0001;  // SUB
 	            branch      = 1'b1;
-	            imm_sel     = 2'b10;
+	            imm_sel     = 3'b010;
 	            illegal     = 1'b0;
 	        end
 
@@ -321,7 +334,7 @@ end
 	        3'b001: begin
 	            alu_control = 4'b0001;  // SUB
 	            branch      = 1'b1;
-	            imm_sel     = 2'b10;
+	            imm_sel     = 3'b010;
 	            illegal     = 1'b0;
 	        end
 
@@ -329,7 +342,7 @@ end
 	        3'b100: begin
 	            alu_control = 4'b0101;  // SLT
 	            branch      = 1'b1;
-	            imm_sel     = 2'b10;
+	            imm_sel     = 3'b010;
 	            illegal     = 1'b0;
 	        end
 
@@ -337,27 +350,27 @@ end
 	        3'b101: begin
 	            alu_control = 4'b0101;  // SLT
 	            branch      = 1'b1;
-	            imm_sel     = 2'b10;
+	            imm_sel     = 3'b010;
 	            illegal     = 1'b0;
 	        end
 
 	        // BLTU
-        	3'b110: begin
-            	alu_control = 4'b0110;  // SLTU
-            	branch      = 1'b1;
-            	imm_sel     = 2'b10;
-            	illegal     = 1'b0;
-        	end
+	3'b110: begin
+	alu_control = 4'b0110;  // SLTU
+	branch      = 1'b1;
+	imm_sel     = 3'b010;
+	illegal     = 1'b0;
+	end
 
-        	// BGEU
-        	3'b111: begin
-            	alu_control = 4'b0110;  // SLTU
-            	branch      = 1'b1;
-            	imm_sel     = 2'b10;
-            	illegal     = 1'b0;
-        	end
+	// BGEU
+	3'b111: begin
+	alu_control = 4'b0110;  // SLTU
+	branch      = 1'b1;
+	imm_sel     = 3'b010;
+	illegal     = 1'b0;
+	end
 
-    	endcase
+	endcase
 	end
 
 // U-type: LUI
@@ -367,7 +380,7 @@ end
     alu_src     = 1'b1;
     alu_a_sel   = 2'b10;  // Select zero
     alu_control = 4'b0000; // ADD
-    imm_sel     = 2'b11;   // U-type
+    imm_sel     = 3'b011;   // U-type
     illegal     = 1'b0;
 
 end
@@ -380,8 +393,77 @@ end
     alu_src     = 1'b1;
     alu_a_sel   = 2'b01;  // Select PC
     alu_control = 4'b0000; // ADD
-    imm_sel     = 2'b11;   // U-type
+    imm_sel     = 3'b011;   // U-type
     illegal     = 1'b0;
+
+end
+
+// JAL
+7'b1101111: begin
+
+    reg_write   = 1'b1;
+
+    alu_src     = 1'b1;
+    alu_a_sel   = 2'b01;   // Select PC
+    alu_control = 4'b0000; // ADD
+
+    imm_sel     = 3'b100;  // J-type
+
+    jal         = 1'b1;
+    link        = 1'b1;
+
+    illegal     = 1'b0;
+
+end
+
+// JALR
+7'b1100111: begin
+
+    if (funct3 == 3'b000) begin
+
+        reg_write   = 1'b1;
+
+        alu_src     = 1'b1;
+        alu_a_sel   = 2'b00;   // Select rs1
+        alu_control = 4'b0000; // ADD
+
+        imm_sel     = 3'b000;  // I-type immediate
+
+        jalr        = 1'b1;
+        link        = 1'b1;
+
+        illegal     = 1'b0;
+
+    end
+
+end
+
+// FENCE
+7'b0001111: begin
+    if (funct3 == 3'b000)
+        illegal = 1'b0;
+end
+
+// SYSTEM instructions: ECALL and EBREAK
+7'b1110011: begin
+
+    // ECALL: exact encoding
+    if (instruction == 32'h00000073) begin
+
+        exception_valid = 1'b1;
+        exception_cause = 32'd11;  // ECALL from M-mode
+        illegal = 1'b0;
+
+    end
+
+    // EBREAK: exact encoding
+    else if (instruction == 32'h00100073) begin
+
+        exception_valid = 1'b1;
+        exception_cause = 32'd3;   // Breakpoint
+        illegal = 1'b0;
+
+    end
 
 end
 

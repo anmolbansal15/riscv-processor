@@ -1,7 +1,7 @@
 module immediate_generator_u_tb;
 
     reg [31:0] instruction;
-    reg [1:0] imm_sel;
+    reg [2:0] imm_sel;
 
     wire [31:0] imm_out;
 
@@ -16,7 +16,7 @@ module immediate_generator_u_tb;
         $dumpfile("sim/immediate_generator_u.vcd");
         $dumpvars(0, immediate_generator_u_tb);
 
-        imm_sel = 2'b11;
+        imm_sel = 3'b011;
 
         // Test 1: Positive U-immediate
         instruction = 32'h123450B7;

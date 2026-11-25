@@ -1,12 +1,15 @@
 module riscv_cpu(
-	input clk,
-	input rst,
+    input clk,
+    input rst,
 
-	output [31:0] pc,
-	output [31:0] instruction,
-	output illegal
+    output [31:0] pc,
+    output [31:0] instruction,
+    output illegal,
+
+    output exception_valid,
+    output [31:0] exception_cause,
+    output [31:0] exception_pc
 );
-
 
     // PC and instruction fetch
     wire [31:0] next_pc;
@@ -37,9 +40,18 @@ module riscv_cpu(
     wire branch;
 
     wire [3:0] alu_control;
-    wire [1:0] imm_sel;
+    wire [2:0] imm_sel;
     wire [1:0] alu_a_sel;
     wire branch_condition_met;
+
+    wire jal;
+    wire link;
+    wire jalr;
+
+    wire [31:0] pc_plus4;
+
+    assign pc_plus4 = pc + 32'd4;
+    assign exception_pc = pc;
 
 
     // 1. Program Counter
@@ -68,7 +80,13 @@ module riscv_cpu(
         .alu_control(alu_control),
         .imm_sel(imm_sel),
 	.alu_a_sel(alu_a_sel),
-        .illegal(illegal)
+        .illegal(illegal),
+	.jal(jal),
+	.link(link),
+	.jalr(jalr),
+	.exception_valid(exception_valid),
+	.exception_cause(exception_cause)
+
     );
 
     // 4. Immediate Generator
@@ -142,7 +160,9 @@ data_memory u_dmem (
 writeback_mux u_wb_mux (
     .alu_result(alu_result),
     .memory_read_data(memory_read_data),
+    .pc_plus4(pc_plus4),
     .mem_to_reg(mem_to_reg),
+    .link(link),
     .write_data(write_data)
 );
 
@@ -152,7 +172,11 @@ next_pc_logic u_next_pc (
     .immediate(immediate),
     .branch(branch),
     .zero(branch_condition_met),
-    .next_pc(next_pc)
+    .jal(jal),
+    .jalr(jalr),
+    .jump_target(alu_result),
+    .next_pc(next_pc),
+    .exception_valid(exception_valid)
 );
 
 

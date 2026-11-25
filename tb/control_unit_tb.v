@@ -9,7 +9,7 @@ module control_unit_tb;
     wire mem_to_reg;
     wire branch;
     wire [3:0] alu_control;
-    wire [1:0] imm_sel;
+    wire [2:0] imm_sel;
     wire illegal;
 
     control_unit dut (
@@ -176,7 +176,7 @@ module control_unit_tb;
             reg_write !== 1'b1 ||
             alu_src !== 1'b1 ||
             alu_control !== 3'b000 ||
-            imm_sel !== 2'b00 ||
+            imm_sel !== 3'b000 ||
             mem_read !== 1'b0 ||
             mem_write !== 1'b0 ||
             mem_to_reg !== 1'b0 ||
@@ -199,7 +199,7 @@ module control_unit_tb;
             reg_write !== 1'b1 ||
             alu_src !== 1'b1 ||
             alu_control !== 3'b010 ||
-            imm_sel !== 2'b00 ||
+            imm_sel !== 3'b000 ||
             mem_read !== 1'b0 ||
             mem_write !== 1'b0 ||
             mem_to_reg !== 1'b0 ||
@@ -221,7 +221,7 @@ module control_unit_tb;
             reg_write !== 1'b1 ||
             alu_src !== 1'b1 ||
             alu_control !== 3'b011 ||
-            imm_sel !== 2'b00 ||
+            imm_sel !== 3'b000 ||
             mem_read !== 1'b0 ||
             mem_write !== 1'b0 ||
             mem_to_reg !== 1'b0 ||
@@ -243,7 +243,7 @@ module control_unit_tb;
             reg_write !== 1'b1 ||
             alu_src !== 1'b1 ||
             alu_control !== 3'b100 ||
-            imm_sel !== 2'b00 ||
+            imm_sel !== 3'b000 ||
             mem_read !== 1'b0 ||
             mem_write !== 1'b0 ||
             mem_to_reg !== 1'b0 ||
@@ -265,7 +265,7 @@ module control_unit_tb;
             reg_write !== 1'b1 ||
             alu_src !== 1'b1 ||
             alu_control !== 3'b101 ||
-            imm_sel !== 2'b00 ||
+            imm_sel !== 3'b000 ||
             mem_read !== 1'b0 ||
             mem_write !== 1'b0 ||
             mem_to_reg !== 1'b0 ||
@@ -275,72 +275,72 @@ module control_unit_tb;
 	// Test 13: LW x3, 8(x1)
         instruction = {
 		12'd8,        // Immediate = 8
-    		5'd1,         // rs1 = x1
-   		3'b010,       // funct3 for LW
-    		5'd3,         // rd = x3
-    		7'b0000011    // Load opcode
+		5'd1,         // rs1 = x1
+		3'b010,       // funct3 for LW
+		5'd3,         // rd = x3
+		7'b0000011    // Load opcode
 	};
 	#1;
 
 	if (illegal !== 1'b0 ||
-   	 reg_write !== 1'b1 ||
-   	 alu_src !== 1'b1 ||
-   	 mem_read !== 1'b1 ||
-   	 mem_write !== 1'b0 ||
-   	 mem_to_reg !== 1'b1 ||
-   	 branch !== 1'b0 ||
-   	 alu_control !== 3'b000 ||
-   	 imm_sel !== 2'b00)
-  	 $fatal(1, "LW decode failed");
+	 reg_write !== 1'b1 ||
+	 alu_src !== 1'b1 ||
+	 mem_read !== 1'b1 ||
+	 mem_write !== 1'b0 ||
+	 mem_to_reg !== 1'b1 ||
+	 branch !== 1'b0 ||
+	 alu_control !== 3'b000 ||
+	 imm_sel !== 3'b000)
+	 $fatal(1, "LW decode failed");
 
 
 	 // Test 14: SW x2, 12(x1)
         instruction = {
 		7'd0,         // Immediate = 0
 		5'd2,         // rs2 = x2
-    		5'd1,         // rs1 = x1
-   		3'b010,       // funct3 for SW
-    		5'd12,        // Immediate = 12
-    		7'b0100011    // Store opcode
+		5'd1,         // rs1 = x1
+		3'b010,       // funct3 for SW
+		5'd12,        // Immediate = 12
+		7'b0100011    // Store opcode
 	};
 	#1;
 
 	if (illegal !== 1'b0 ||
-   	 reg_write !== 1'b0 ||
-   	 alu_src !== 1'b1 ||
-   	 mem_read !== 1'b0 ||
-   	 mem_write !== 1'b1 ||
-   	 mem_to_reg !== 1'b0 ||
-   	 branch !== 1'b0 ||
-   	 alu_control !== 3'b000 ||
-   	 imm_sel !== 2'b01)
-  	 $fatal(1, "SW decode failed");
+	 reg_write !== 1'b0 ||
+	 alu_src !== 1'b1 ||
+	 mem_read !== 1'b0 ||
+	 mem_write !== 1'b1 ||
+	 mem_to_reg !== 1'b0 ||
+	 branch !== 1'b0 ||
+	 alu_control !== 3'b000 ||
+	 imm_sel !== 3'b001)
+	 $fatal(1, "SW decode failed");
 
 
 
 	 // Test 15: BEQ x1, x2, 16
 	instruction = {
-    		1'b0,         // imm[12]
-    		6'b0,         // imm[10:5]
-    		5'd2,         // rs2 = x2
-    		5'd1,         // rs1 = x1
-    		3'b000,       // funct3 = BEQ
-    		4'd8,         // imm[4:1] = 8, offset = 16
-    		1'b0,         // imm[11]
-    		7'b1100011    // Branch opcode
+		1'b0,         // imm[12]
+		6'b0,         // imm[10:5]
+		5'd2,         // rs2 = x2
+		5'd1,         // rs1 = x1
+		3'b000,       // funct3 = BEQ
+		4'd8,         // imm[4:1] = 8, offset = 16
+		1'b0,         // imm[11]
+		7'b1100011    // Branch opcode
 	};
 	#1;
 
 	if (illegal !== 1'b0 ||
-    	 reg_write !== 1'b0 ||
-   	 alu_src !== 1'b0 ||
-   	 mem_read !== 1'b0 ||
-   	 mem_write !== 1'b0 ||
-   	 mem_to_reg !== 1'b0 ||
-   	 branch !== 1'b1 ||
-   	 alu_control !== 3'b001 ||
-   	 imm_sel !== 2'b10)
-    	 $fatal(1, "BEQ decode failed");
+	 reg_write !== 1'b0 ||
+	 alu_src !== 1'b0 ||
+	 mem_read !== 1'b0 ||
+	 mem_write !== 1'b0 ||
+	 mem_to_reg !== 1'b0 ||
+	 branch !== 1'b1 ||
+	 alu_control !== 3'b001 ||
+	 imm_sel !== 3'b010)
+	 $fatal(1, "BEQ decode failed");
 
 	 // Test 16: SLL
 	instruction = {7'b0000000, 5'd2, 5'd1,
@@ -383,7 +383,7 @@ module control_unit_tb;
 	#1;
 	if (illegal !== 1'b0 || reg_write !== 1'b1 ||
 	    alu_src !== 1'b1 || alu_control !== 4'b0110 ||
-	    imm_sel !== 2'b00)
+	    imm_sel !== 3'b000)
 	    $fatal(1, "SLTIU decode failed");
 
 
@@ -444,21 +444,21 @@ module control_unit_tb;
 	if (illegal !== 1'b1 || reg_write !== 1'b0)
 	    $fatal(1, "Invalid SRA encoding was accepted");
 
-    	// Test 25: BNE x1, x2, offset
+	// Test 25: BNE x1, x2, offset
 	instruction = {
-    	7'b0000000,
-    	5'd2,
-    	5'd1,
-    	3'b001,
-    	5'b00000,
-    	7'b1100011
+	7'b0000000,
+	5'd2,
+	5'd1,
+	3'b001,
+	5'b00000,
+	7'b1100011
 	};
 	#1;
 
 	if (illegal !== 1'b0 ||
 	    branch !== 1'b1 ||
 	    alu_control !== 4'b0001 ||
-	    imm_sel !== 2'b10 ||
+	    imm_sel !== 3'b010 ||
 	    reg_write !== 1'b0)
 	    $fatal(1, "BNE decode failed");
 
@@ -476,7 +476,7 @@ module control_unit_tb;
 	if (illegal !== 1'b0 ||
 	    branch !== 1'b1 ||
 	    alu_control !== 4'b0101 ||
-	    imm_sel !== 2'b10)
+	    imm_sel !== 3'b010)
 	    $fatal(1, "BLT decode failed");
 
 	    //Test 27: BGE x1, x2, offset
@@ -493,7 +493,7 @@ instruction = {
 if (illegal !== 1'b0 ||
     branch !== 1'b1 ||
     alu_control !== 4'b0101 ||
-    imm_sel !== 2'b10)
+    imm_sel !== 3'b010)
     $fatal(1, "BGE decode failed");
 
     //Test 28: BLTU x1, x2, offset
@@ -510,7 +510,7 @@ instruction = {
 if (illegal !== 1'b0 ||
     branch !== 1'b1 ||
     alu_control !== 4'b0110 ||
-    imm_sel !== 2'b10)
+    imm_sel !== 3'b010)
     $fatal(1, "BLTU decode failed");
 
     //Test 29: BGEU x1, x2, offset
@@ -527,7 +527,7 @@ instruction = {
 if (illegal !== 1'b0 ||
     branch !== 1'b1 ||
     alu_control !== 4'b0110 ||
-    imm_sel !== 2'b10)
+    imm_sel !== 3'b010)
     $fatal(1, "BGEU decode failed");
 
     //Invalid: Reserved branch funct3 = 010
@@ -551,7 +551,7 @@ instruction = {12'd0, 5'd1, 3'b000, 5'd3, 7'b0000011};
 #1;
 if (illegal !== 0 || reg_write !== 1 ||
     mem_read !== 1 || mem_to_reg !== 1 ||
-    alu_src !== 1 || imm_sel !== 2'b00)
+    alu_src !== 1 || imm_sel !== 3'b000)
     $fatal(1, "LB decode failed");
 
 // LH
@@ -579,14 +579,14 @@ if (illegal !== 0 || reg_write !== 1 ||
 instruction = {7'd0, 5'd2, 5'd1, 3'b000, 5'd0, 7'b0100011};
 #1;
 if (illegal !== 0 || mem_write !== 1 ||
-    alu_src !== 1 || imm_sel !== 2'b01)
+    alu_src !== 1 || imm_sel !== 3'b001)
     $fatal(1, "SB decode failed");
 
 // SH
 instruction = {7'd0, 5'd2, 5'd1, 3'b001, 5'd0, 7'b0100011};
 #1;
 if (illegal !== 0 || mem_write !== 1 ||
-    alu_src !== 1 || imm_sel !== 2'b01)
+    alu_src !== 1 || imm_sel !== 3'b001)
     $fatal(1, "SH decode failed");
 
 

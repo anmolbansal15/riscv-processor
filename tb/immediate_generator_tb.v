@@ -1,6 +1,6 @@
 module immediate_generator_tb;
 reg [31:0] instruction;
-reg [1:0] imm_sel;
+reg [2:0] imm_sel;
 wire [31:0] imm_out;
 
 immediate_generator dut(
@@ -14,11 +14,11 @@ immediate_generator dut(
         $dumpvars(0, immediate_generator_tb);
 
         instruction = 32'b0;
-        imm_sel = 2'b00;
+        imm_sel = 3'b000;
 
         // Test 1: I-type positive immediate (+12)
         instruction = {12'h00C, 20'b0};
-        imm_sel = 2'b00;
+        imm_sel = 3'b000;
         #1;
         if (imm_out !== 32'h0000000C)
             $fatal(1, "I-type +12 failed: %h", imm_out);
@@ -32,7 +32,7 @@ immediate_generator dut(
         // Test 3: S-type positive immediate (+12)
         instruction = 32'b0;
         instruction[11:7] = 5'd12;
-        imm_sel = 2'b01;
+        imm_sel = 3'b001;
         #1;
         if (imm_out !== 32'h0000000C)
             $fatal(1, "S-type +12 failed: %h", imm_out);
@@ -48,7 +48,7 @@ immediate_generator dut(
         // Test 5: B-type positive branch offset (+12)
         instruction = 32'b0;
         instruction[11:8] = 4'd6;
-        imm_sel = 2'b10;
+        imm_sel = 3'b010;
         #1;
         if (imm_out !== 32'h0000000C)
             $fatal(1, "B-type +12 failed: %h", imm_out);
@@ -64,11 +64,12 @@ immediate_generator dut(
             $fatal(1, "B-type -8 failed: %h", imm_out);
 
         // Test 7: Unsupported selector returns zero
-        imm_sel = 2'b11;
-        instruction = 32'hFFFFFFFF;
-        #1;
-        if (imm_out !== 32'b0)
-            $fatal(1, "Default case failed: %h", imm_out);
+	imm_sel = 3'b101;
+	instruction = 32'hFFFFFFFF;
+	#1;
+
+	if (imm_out !== 32'b0)
+	$fatal(1, "Default case failed: %h", imm_out);
 
         $display("PASS: All immediate generator tests");
         $finish;
