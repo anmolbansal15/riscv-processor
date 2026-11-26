@@ -417,6 +417,7 @@ vvp sim/memory_map_uart_tb
 **CPU-controlled single-byte UART loopback**
 
 ```bash
+SOC_RTL="rtl/pc_reg.v rtl/inst_memory.v rtl/control_unit.v rtl/immediate_generator.v rtl/register_file.v rtl/alu_operand_mux.v rtl/alu_operand_a_mux.v rtl/alu.v rtl/data_memory.v rtl/writeback_mux.v rtl/next_pc_logic.v rtl/riscv_cpu.v rtl/soc/memory_map.v rtl/peripherals/uart_tx_fifo.v rtl/peripherals/uart_tx.v rtl/peripherals/uart_tx_subsystem.v rtl/peripherals/uart_rx.v rtl/peripherals/uart_rx_fifo.v rtl/peripherals/uart_controller.v rtl/soc/soc_top.v"
 iverilog -g2012 -Wall -s soc_top_tb -o sim/soc_top_tb $SOC_RTL tb/soc/soc_top_tb.v
 vvp sim/soc_top_tb
 ```
@@ -424,6 +425,7 @@ vvp sim/soc_top_tb
 **CPU-controlled three-byte UART loopback**
 
 ```bash
+SOC_RTL="rtl/pc_reg.v rtl/inst_memory.v rtl/control_unit.v rtl/immediate_generator.v rtl/register_file.v rtl/alu_operand_mux.v rtl/alu_operand_a_mux.v rtl/alu.v rtl/data_memory.v rtl/writeback_mux.v rtl/next_pc_logic.v rtl/riscv_cpu.v rtl/soc/memory_map.v rtl/peripherals/uart_tx_fifo.v rtl/peripherals/uart_tx.v rtl/peripherals/uart_tx_subsystem.v rtl/peripherals/uart_rx.v rtl/peripherals/uart_rx_fifo.v rtl/peripherals/uart_controller.v rtl/soc/soc_top.v"
 iverilog -g2012 -Wall -s soc_uart_multi_tb -o sim/soc_uart_multi_tb $SOC_RTL tb/soc/soc_uart_multi_tb.v
 vvp sim/soc_uart_multi_tb
 ```
@@ -431,6 +433,7 @@ vvp sim/soc_uart_multi_tb
 **CPU-controlled six-byte TX polling test**
 
 ```bash
+SOC_RTL="rtl/pc_reg.v rtl/inst_memory.v rtl/control_unit.v rtl/immediate_generator.v rtl/register_file.v rtl/alu_operand_mux.v rtl/alu_operand_a_mux.v rtl/alu.v rtl/data_memory.v rtl/writeback_mux.v rtl/next_pc_logic.v rtl/riscv_cpu.v rtl/soc/memory_map.v rtl/peripherals/uart_tx_fifo.v rtl/peripherals/uart_tx.v rtl/peripherals/uart_tx_subsystem.v rtl/peripherals/uart_rx.v rtl/peripherals/uart_rx_fifo.v rtl/peripherals/uart_controller.v rtl/soc/soc_top.v"
 iverilog -g2012 -Wall -s soc_uart_tx_poll_tb -o sim/soc_uart_tx_poll_tb $SOC_RTL tb/soc/soc_uart_tx_poll_tb.v
 vvp sim/soc_uart_tx_poll_tb
 ```
