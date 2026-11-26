@@ -1,4 +1,6 @@
-module riscv_cpu(
+module riscv_cpu #(
+    parameter integer EXTERNAL_DATA_BUS = 0
+)(
     input clk,
     input rst,
 
@@ -8,7 +10,15 @@ module riscv_cpu(
 
     output exception_valid,
     output [31:0] exception_cause,
-    output [31:0] exception_pc
+    output [31:0] exception_pc,
+
+    // External data bus
+    input  [31:0] data_read_data,
+    output [31:0] data_addr,
+    output        data_mem_read,
+    output        data_mem_write,
+    output [31:0] data_write_data,
+    output [2:0]  data_funct3
 );
 
     // PC and instruction fetch
@@ -28,8 +38,13 @@ module riscv_cpu(
     wire zero;
 
     // Data Memory and Write-Back
+    wire [31:0] internal_memory_read_data;
     wire [31:0] memory_read_data;
     wire [31:0] write_data;
+
+    // Internal RAM enable signals
+    wire internal_dmem_read_enable;
+    wire internal_dmem_write_enable;
 
     // Control signals
     wire reg_write;
@@ -53,6 +68,26 @@ module riscv_cpu(
     assign pc_plus4 = pc + 32'd4;
     assign exception_pc = pc;
 
+    // External data bus outputs
+    assign data_addr       = alu_result;
+    assign data_mem_read   = mem_read;
+    assign data_mem_write  = mem_write;
+    assign data_write_data = read_data2;
+    assign data_funct3     = instruction[14:12];
+
+    // Enable internal memory only in standalone mode
+    assign internal_dmem_read_enable =
+        mem_read && (EXTERNAL_DATA_BUS == 0);
+
+    assign internal_dmem_write_enable =
+        mem_write && (EXTERNAL_DATA_BUS == 0);
+
+    // Select internal or external read data
+    assign memory_read_data =
+        (EXTERNAL_DATA_BUS == 1) ?
+        data_read_data :
+        internal_memory_read_data;
+
 
     // 1. Program Counter
     pc_reg u_pc (
@@ -63,10 +98,10 @@ module riscv_cpu(
     );
 
     // 2. Instruction Memory
-    inst_memory u_imem (
-        .address(pc),
-        .instruction(instruction)
-    );
+    	inst_memory u_imem (
+    	.address(pc),
+    	.instruction(instruction)
+	);
 
     // 3. Control Unit
     control_unit u_control (
@@ -144,18 +179,20 @@ alu_operand_a_mux u_alu_a_mux (
 	    1'b0;
 
 
+// 9. Data Memory
 
-	// 9. Data Memory
-data_memory u_dmem (
-    .clk(clk),
-    .mem_read(mem_read),
-    .mem_write(mem_write),
-    .address(alu_result),
-    .write_data(read_data2),
-    .funct3(instruction[14:12]),
-    .read_data(memory_read_data)
-);
+	data_memory u_dmem (
+    	.clk(clk),
 
+    	.mem_read(internal_dmem_read_enable),
+    	.mem_write(internal_dmem_write_enable),
+
+    	.address(alu_result),
+    	.write_data(read_data2),
+    	.funct3(instruction[14:12]),
+
+    	.read_data(internal_memory_read_data)
+	);
 // 10. Write-Back MUX
 writeback_mux u_wb_mux (
     .alu_result(alu_result),
